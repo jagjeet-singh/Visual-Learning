@@ -114,10 +114,10 @@ def main(unused_argv):
         shuffle=True)
 
 
-    for i in range(100):
+    for i in range(300):
         train_results = mnist_classifier.train(
             input_fn=train_input_fn,
-            steps=200,
+            steps=100,
             hooks=[logging_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
