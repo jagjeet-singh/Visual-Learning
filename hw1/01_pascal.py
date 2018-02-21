@@ -144,7 +144,7 @@ def load_pascal(data_dir, split='train'):
     filename = osp.join(data_dir,'ImageSets/Main/'+split+".txt")
     with open(filename) as f:
         image_list = f.read().splitlines()
-    pdb.set_trace()
+    # pdb.set_trace()
     image_list.sort()
     n_images = len(image_list)
     num_classes = len(CLASS_NAMES)
@@ -223,7 +223,7 @@ def main():
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=10)
     # Train the model
-    pdb.set_trace()
+    # pdb.set_trace()
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
@@ -240,7 +240,7 @@ def main():
         y=eval_labels,
         num_epochs=1,
         shuffle=False)
-    pdb.set_trace()
+    # pdb.set_trace()
     pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
     pred = np.stack([p['probabilities'] for p in pred])
     rand_AP = compute_map(
