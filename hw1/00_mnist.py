@@ -78,7 +78,7 @@ def cnn_model_fn(features, labels, mode):
             labels=labels, predictions=predictions["classes"])
     metrics = {'accuracy': accuracy}
     tf.summary.scalar('accuracy', accuracy[1])
-    # tf.summary.scalar('accuracy', loss[1])
+    tf.summary.scalar('accuracy', loss[1])
 
     if mode == tf.estimator.ModeKeys.EVAL:
         return tf.estimator.EstimatorSpec(
@@ -122,7 +122,7 @@ def main(unused_argv):
         num_epochs=1,
         shuffle=False)
 
-    for i in range(10):
+    for i in range(2000):
         train_results = mnist_classifier.train(
             input_fn=train_input_fn,
             steps=10,
