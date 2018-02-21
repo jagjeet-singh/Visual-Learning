@@ -181,7 +181,7 @@ def load_pascal(data_dir, split='train'):
             img_index+=1
         cat_index+=1
     print("##### Data Loaded #####")
-    return np.float16(images[:5]),np.float16(labels[:5]),np.float16(weights[:5pre])
+    return np.float16(images),np.float16(labels),np.float16(weights)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -232,7 +232,7 @@ def main():
         shuffle=True)
     pascal_classifier.train(
         input_fn=train_input_fn,
-        steps=3,
+        steps=10,
         hooks=[logging_hook])
     # Evaluate the model and print results
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
