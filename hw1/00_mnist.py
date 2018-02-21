@@ -7,6 +7,7 @@ from __future__ import print_function
 # Imports
 import numpy as np
 import tensorflow as tf
+import pdb
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -68,18 +69,32 @@ def cnn_model_fn(features, labels, mode):
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
+        print("#########Loss:{}############".format(loss))
+        # pdb.set_trace()
         return tf.estimator.EstimatorSpec(
             mode=mode, loss=loss, train_op=train_op)
+
+    accuracy = tf.metrics.accuracy(
+            labels=labels, predictions=predictions["classes"])
+    metrics = {'accuracy': accuracy}
+    tf.summary.scalar('accuracy', accuracy[1])
+    # tf.summary.scalar('accuracy', loss[1])
+
+    if mode == tf.estimator.ModeKeys.EVAL:
+        return tf.estimator.EstimatorSpec(
+            mode, loss=loss, eval_metric_ops=metrics)
 
     # Add evaluation metrics (for EVAL mode)
     eval_metric_ops = {
         "accuracy": tf.metrics.accuracy(
             labels=labels, predictions=predictions["classes"])}
+    # pdb.set_trace()
     return tf.estimator.EstimatorSpec(
         mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
 def main(unused_argv):
+
     # Load training and eval data
     mnist = tf.contrib.learn.datasets.load_dataset("mnist")
     train_data = mnist.train.images  # Returns np.array
@@ -99,18 +114,23 @@ def main(unused_argv):
         batch_size=100,
         num_epochs=None,
         shuffle=True)
-    mnist_classifier.train(
-        input_fn=train_input_fn,
-        steps=5,
-        hooks=[logging_hook])
+
     # Evaluate the model and print results
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": eval_data},
         y=eval_labels,
         num_epochs=1,
         shuffle=False)
-    eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-    print(eval_results)
+
+    for i in range(10):
+        train_results = mnist_classifier.train(
+            input_fn=train_input_fn,
+            steps=10,
+            hooks=[logging_hook])
+        # pdb.set_trace()
+        # print("############# Trained ####################")
+        eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
+        print(eval_results)
 
 
 if __name__ == "__main__":
