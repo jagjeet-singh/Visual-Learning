@@ -260,7 +260,7 @@ def main():
             eval_labels, eval_labels, eval_weights, average=None)
         print('GT AP: {} mAP'.format(np.mean(gt_AP)))
         AP = compute_map(eval_labels, pred, eval_weights, average=None)
-        mAP.append(AP)
+        mAP_list.append(AP)
         print('Obtained {} mAP'.format(np.mean(AP)))
         print('per class:')
         for cid, cname in enumerate(CLASS_NAMES):
