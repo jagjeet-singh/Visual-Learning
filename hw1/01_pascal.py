@@ -50,8 +50,7 @@ size = 256
 def cnn_model_fn(features, labels, mode, num_classes=20):
     # Write this function
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 3])
-    # weights = tf.reshape(features["w"],[]-1,num_classes)
-    # weights = tf.reduce_min(weights,axis=1)
+   
     # Convolutional Layer #1
     conv1 = tf.layers.conv2d(
         inputs=input_layer,
@@ -98,6 +97,11 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
     # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=10)
     loss = tf.identity(tf.losses.sigmoid_cross_entropy(
         multi_class_labels=labels, logits=logits), name='loss')
+    # pdb.set_trace()
+    # pred=predictions['probabilities']
+    # AP = compute_map(labels, pred, features["w"], average=None)
+    # mAP = np.mean(AP)
+    # tf.summary.scalar('my_mAP',mAP)
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -217,6 +221,8 @@ def main():
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
 
+    pdb.set_trace()
+
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
@@ -226,12 +232,6 @@ def main():
         tensors=tensors_to_log, every_n_iter=10)
     # Train the model
     # pdb.set_trace()
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": train_data, "w": train_weights},
-        y=train_labels,
-        batch_size=100,
-        num_epochs=None,
-        shuffle=True)
 
     n_iter = []
     mAP_list = []
@@ -239,6 +239,14 @@ def main():
     gtAP_list = []
     for i in range(100):
         n_iter.append(i)
+
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": train_data, "w": train_weights},
+        y=train_labels,
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True)
+
         pascal_classifier.train(
             input_fn=train_input_fn,
             steps=10,
@@ -249,7 +257,7 @@ def main():
             y=eval_labels,
             num_epochs=1,
             shuffle=False)
-        # pdb.set_trace()
+        pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
         # pdb.set_trace()
