@@ -252,7 +252,7 @@ def main():
         # pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
-        pdb.set_trace()
+        # pdb.set_trace()
         rand_AP = compute_map(
             eval_labels, np.random.random(eval_labels.shape),
             eval_weights, average=None)
