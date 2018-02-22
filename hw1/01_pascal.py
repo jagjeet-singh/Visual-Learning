@@ -241,7 +241,7 @@ def main():
         n_iter.append(i)
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=3,
+            steps=10,
             hooks=[logging_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -252,6 +252,7 @@ def main():
         # pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
+        pdb.set_trace()
         rand_AP = compute_map(
             eval_labels, np.random.random(eval_labels.shape),
             eval_weights, average=None)
@@ -275,7 +276,7 @@ def main():
     with open('mAP', 'wb') as fp:
         pickle.dump(mAP_list, fp)
     
-    plt.plot(mAP_list,n_iter)
+    plt.plot(n_iter,mAP_list)
     plt.ylabel('Test mAP')
     plt.xlabel('Iterations')
     plt.show()
