@@ -256,11 +256,13 @@ def main():
             eval_labels, np.random.random(eval_labels.shape),
             eval_weights, average=None)
         print('Random AP: {} mAP'.format(np.mean(rand_AP)))
+        randAP_list.append(np.mean(rand_AP))
         gt_AP = compute_map(
             eval_labels, eval_labels, eval_weights, average=None)
         print('GT AP: {} mAP'.format(np.mean(gt_AP)))
+        gtAP_list.append(np.mean(gt_AP))
         AP = compute_map(eval_labels, pred, eval_weights, average=None)
-        mAP_list.append(AP)
+        mAP_list.append(np.mean(AP))
         print('Obtained {} mAP'.format(np.mean(AP)))
         print('per class:')
         for cid, cname in enumerate(CLASS_NAMES):
