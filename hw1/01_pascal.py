@@ -265,7 +265,7 @@ def main():
         print('per class:')
         for cid, cname in enumerate(CLASS_NAMES):
             print('{}: {}'.format(cname, _get_el(AP, cid)))
-
+    print(len(mAP_list))
     with open('randAP', 'wb') as fp:
         pickle.dump(randAP_list, fp)
     with open('gtAP', 'wb') as fp:
