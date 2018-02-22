@@ -237,7 +237,7 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(1):
+    for i in range(10):
         n_iter.append(i)
         pascal_classifier.train(
             input_fn=train_input_fn,
