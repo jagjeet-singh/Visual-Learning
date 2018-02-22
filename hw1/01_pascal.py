@@ -229,7 +229,7 @@ def main():
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=4,
+        batch_size=100,
         num_epochs=None,
         shuffle=True)
 
@@ -237,7 +237,7 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(10):
+    for i in range(100):
         n_iter.append(i)
         pascal_classifier.train(
             input_fn=train_input_fn,
