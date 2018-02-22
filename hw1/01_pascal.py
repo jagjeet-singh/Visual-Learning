@@ -273,7 +273,7 @@ def main():
     with open('mAP', 'wb') as fp:
         pickle.dump(mAP_list, fp)
     
-    plt.plot(mAP,n_iter)
+    plt.plot(mAP_list,n_iter)
     plt.ylabel('Test mAP')
     plt.xlabel('Iterations')
     plt.show()
