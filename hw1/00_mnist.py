@@ -8,6 +8,7 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import pdb
+from IPython import embed
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -102,6 +103,7 @@ def main(unused_argv):
     # Create the Estimator
     mnist_classifier = tf.estimator.Estimator(
         model_fn=cnn_model_fn, model_dir="/tmp/mnist_convnet_model")
+    embed()
     tensors_to_log = {"loss": "loss"}
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=500)

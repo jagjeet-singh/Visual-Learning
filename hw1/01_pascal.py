@@ -11,11 +11,12 @@ from os import listdir
 import os.path as osp
 from PIL import Image
 from functools import partial
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # from skimage import io
 import pdb
 from eval import compute_map
 # import models
+import pickle
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -88,6 +89,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         # `logging_hook`.
         "probabilities": tf.nn.sigmoid(logits, name="sigmoid_tensor")
     }
+
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
@@ -230,31 +232,53 @@ def main():
         batch_size=4,
         num_epochs=None,
         shuffle=True)
-    pascal_classifier.train(
-        input_fn=train_input_fn,
-        steps=10,
-        hooks=[logging_hook])
-    # Evaluate the model and print results
-    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": eval_data, "w": eval_weights},
-        y=eval_labels,
-        num_epochs=1,
-        shuffle=False)
-    # pdb.set_trace()
-    pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
-    pred = np.stack([p['probabilities'] for p in pred])
-    rand_AP = compute_map(
-        eval_labels, np.random.random(eval_labels.shape),
-        eval_weights, average=None)
-    print('Random AP: {} mAP'.format(np.mean(rand_AP)))
-    gt_AP = compute_map(
-        eval_labels, eval_labels, eval_weights, average=None)
-    print('GT AP: {} mAP'.format(np.mean(gt_AP)))
-    AP = compute_map(eval_labels, pred, eval_weights, average=None)
-    print('Obtained {} mAP'.format(np.mean(AP)))
-    print('per class:')
-    for cid, cname in enumerate(CLASS_NAMES):
-        print('{}: {}'.format(cname, _get_el(AP, cid)))
+
+    n_iter = []
+    mAP_list = []
+    randAP_list = []
+    gtAP_list = []
+    for i in range(1):
+        n_iter.append(i)
+        pascal_classifier.train(
+            input_fn=train_input_fn,
+            steps=3,
+            hooks=[logging_hook])
+        # Evaluate the model and print results
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={"x": eval_data, "w": eval_weights},
+            y=eval_labels,
+            num_epochs=1,
+            shuffle=False)
+        # pdb.set_trace()
+        pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
+        pred = np.stack([p['probabilities'] for p in pred])
+        rand_AP = compute_map(
+            eval_labels, np.random.random(eval_labels.shape),
+            eval_weights, average=None)
+        print('Random AP: {} mAP'.format(np.mean(rand_AP)))
+        gt_AP = compute_map(
+            eval_labels, eval_labels, eval_weights, average=None)
+        print('GT AP: {} mAP'.format(np.mean(gt_AP)))
+        AP = compute_map(eval_labels, pred, eval_weights, average=None)
+        mAP.append(AP)
+        print('Obtained {} mAP'.format(np.mean(AP)))
+        print('per class:')
+        for cid, cname in enumerate(CLASS_NAMES):
+            print('{}: {}'.format(cname, _get_el(AP, cid)))
+
+    with open('randAP', 'wb') as fp:
+        pickle.dump(randAP_list, fp)
+    with open('gtAP', 'wb') as fp:
+        pickle.dump(gtAP_list, fp)
+    with open('mAP', 'wb') as fp:
+        pickle.dump(mAP_list, fp)
+    
+    plt.plot(mAP,n_iter)
+    plt.ylabel('Test mAP')
+    plt.xlabel('Iterations')
+    plt.show()
+    plt.savefig('mAP_Pascal.png')
+
 
 
 if __name__ == "__main__":
