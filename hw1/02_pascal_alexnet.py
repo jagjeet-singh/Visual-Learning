@@ -51,13 +51,13 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
    
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 3])
     rand_flip = lambda x:tf.image.random_flip_left_right(x)
-    rand_crop = lambda x:tf.random_crop(x)
+    rand_crop = lambda x:tf.random_crop(x,size=[128,128,3])
 
     if mode == tf.estimator.ModeKeys.TRAIN:
         input_aug = tf.map_fn(fn=rand_flip, elems=input_layer)
 
     elif mode == tf.estimator.ModeKeys.PREDICT:
-        input_aug = tf.map_fn(fn=rand_crop, elems=input_layer, size=[128,128,3])
+        input_aug = tf.map_fn(fn=rand_crop, elems=input_layer)
 
     else:
         input_aug = input_layer
