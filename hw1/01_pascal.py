@@ -159,12 +159,14 @@ def load_pascal(data_dir, split='train'):
     weights = np.zeros((n_images, num_classes))
     counter = 0
     # Read Image JPGs
+    # pdb.set_trace()
     for image in image_list:
         imageJpgFile = osp.join(data_dir,'JPEGImages/'+image+'.jpg')
         img = Image.open(imageJpgFile)
         img = img.resize((size,size), Image.NEAREST)
         imageNp = np.array(img)
         images[counter,:,:,:] = imageNp
+        counter+=1
     # Assign labels and weights
     cat_index = 0
     for cat in CLASS_NAMES:
@@ -276,7 +278,7 @@ def main():
         print('per class:')
         for cid, cname in enumerate(CLASS_NAMES):
             print('{}: {}'.format(cname, _get_el(AP, cid)))
-    print(len(mAP_list))
+    # print(len(mAP_list))
     with open('randAP', 'wb') as fp:
         pickle.dump(randAP_list, fp)
     with open('gtAP', 'wb') as fp:
