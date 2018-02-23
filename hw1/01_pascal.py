@@ -223,7 +223,7 @@ def main():
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
@@ -259,7 +259,7 @@ def main():
             y=eval_labels,
             num_epochs=1,
             shuffle=False)
-        pdb.set_trace()
+        # pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
         # pdb.set_trace()
