@@ -50,18 +50,23 @@ size = 256
 def cnn_model_fn(features, labels, mode, num_classes=20):
    
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 3])
+    resize = lambda x:tf.image.resize_images(x, size=[320,320])
+    rand_crop = lambda x:tf.random_crop(x,size=[256,256,3])
+    cen_crop = lambda x: tf.image.central_crop(x, central_fraction=0.8)
     rand_flip = lambda x:tf.image.random_flip_left_right(x)
-    rand_crop = lambda x:tf.random_crop(x,size=[128,128,3])
+
 
     if mode == tf.estimator.ModeKeys.TRAIN:
-        input_aug = tf.map_fn(fn=rand_flip, elems=input_layer)
+        input_aug = tf.map_fn(fn=resize, elems=input_layer)
+        input_aug = tf.map_fn(fn=rand_crop, elems=input_aug)
+        input_aug = tf.map_fn(fn=rand_flip, elems=input_aug)
 
     elif mode == tf.estimator.ModeKeys.PREDICT:
-        input_aug = tf.map_fn(fn=rand_crop, elems=input_layer)
+        input_aug = tf.map_fn(fn=resize, elems=input_layer)
+        input_aug = tf.map_fn(fn=cen_crop, elems=input_aug)
 
     else:
         input_aug = input_layer
-
   
     # Convolutional Layer #1
     conv1 = tf.layers.conv2d(
@@ -219,12 +224,18 @@ def load_pascal(data_dir, split='train'):
     image_list.sort()
     n_images = len(image_list)
     num_classes = len(CLASS_NAMES)
+    # images = np.zeros((10,size,size,3))
+    # labels = np.zeros((10, num_classes))
+    # weights = np.zeros((10, num_classes))
+
     images = np.zeros((n_images,size,size,3))
     labels = np.zeros((n_images, num_classes))
     weights = np.zeros((n_images, num_classes))
     counter = 0
     # Read Image JPGs
     for image in image_list:
+    # for image in image_list[:10]:
+
         imageJpgFile = osp.join(data_dir,'JPEGImages/'+image+'.jpg')
         img = Image.open(imageJpgFile)
         img = img.resize((size,size), Image.NEAREST)
@@ -239,6 +250,7 @@ def load_pascal(data_dir, split='train'):
             cat_list = f.read().splitlines()
         cat_list.sort()
         img_index = 0
+        # for line in cat_list[:10]:
         for line in cat_list:
             # print(cat_index)
             if line[-2:]==' 1':
@@ -253,7 +265,7 @@ def load_pascal(data_dir, split='train'):
             img_index+=1
         cat_index+=1
     print("##### Data Loaded #####")
-    return np.float16(images),np.float16(labels),np.float16(weights)
+    return np.float32(images),np.float32(labels),np.float32(weights)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -286,6 +298,7 @@ def main():
         trainval_data_dir, split='trainval')
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
+
 
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
