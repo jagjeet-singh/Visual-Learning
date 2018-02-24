@@ -73,7 +73,7 @@ def dense(inputs,units,activation, name):
 
 def cnn_model_fn(features, labels, mode, num_classes=20):
    
-    pdb.set_trace()
+    # pdb.set_trace()
 
     input_layer = tf.reshape(features["x"], [-1, 256, 256, 3])
     resize = lambda x:tf.image.resize_images(x, size=[320,320])
@@ -141,7 +141,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
     }
 
     # Summaries for Tensorboard
-    pdb.set_trace()
+    # pdb.set_trace()
         
 
     if mode == tf.estimator.ModeKeys.PREDICT:
@@ -172,11 +172,11 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         for g, v in grads_and_vars:
             if g is not None:
                 tf.summary.histogram(v.name[:-2]+'_grad', g)
-        tf.summary.image('my_image', input_layer, max_outputs=10)
+        tf.summary.image('my_image', input_layer, max_outputs=25)
         tf.summary.scalar('train_loss', loss)
         tf.summary.scalar('learning_rate', decayed_learning_rate)
         summary_hook = tf.train.SummarySaverHook(
-            save_steps=5,
+            save_steps=400,
             output_dir='mnistParams',
             summary_op=tf.summary.merge_all())
 
@@ -237,8 +237,8 @@ def load_pascal(data_dir, split='train'):
     # weights = np.zeros((n_images, num_classes))
     counter = 0
     # Read Image JPGs
-    # for image in image_list:
-    for image in image_list[:10]:
+    for image in image_list:
+    # for image in image_list[:10]:
         imageJpgFile = osp.join(data_dir,'JPEGImages/'+image+'.jpg')
         img = Image.open(imageJpgFile)
         img = img.resize((size,size), Image.NEAREST)
@@ -253,8 +253,8 @@ def load_pascal(data_dir, split='train'):
             cat_list = f.read().splitlines()
         cat_list.sort()
         img_index = 0
-        for line in cat_list[:10]:
-        # for line in cat_list:
+        # for line in cat_list[:10]:
+        for line in cat_list:
             # print(cat_index)
             if line[-2:]==' 1':
                 labels[img_index][cat_index]=1
@@ -301,14 +301,14 @@ def main():
         trainval_data_dir, split='trainval')
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
-    pdb.set_trace()
+    # pdb.set_trace()
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
         model_dir="VGGParams")
     tensors_to_log = {"loss": "loss"}
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=10)
+        tensors=tensors_to_log, every_n_iter=100)
     # Train the model
     # pdb.set_trace()
 
@@ -316,19 +316,19 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(5):
+    for i in range(100):
         n_iter.append(i)
 
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=4,
+        batch_size=10,
         num_epochs=None,
         shuffle=True)
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=2,
+            steps=400,
             hooks=[logging_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -336,7 +336,7 @@ def main():
             y=eval_labels,
             num_epochs=1,
             shuffle=False)
-        pdb.set_trace()
+        # pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
         rand_AP = compute_map(
