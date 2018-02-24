@@ -46,7 +46,7 @@ CLASS_NAMES = [
 trainval_data_dir = 'VOCdevkit_trainVal/VOC2007'
 test_data_dir = 'VOCdevkit_test/VOC2007'
 size = 224
-full=0
+full=1
 
 def conv2d(inputs,filters, kernel_size,padding,activation,name):
     return tf.layers.conv2d(
@@ -97,41 +97,46 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
     
     # pdb.set_trace()
     # Convolutional Layer #1
-    conv1 = conv2d(input_aug,64,[3, 3],"same",tf.nn.relu,'conv1')
-    conv2 = conv2d(conv1,64,[3, 3],"same",tf.nn.relu,'conv2')
+    with tf.variable_scope('conv1'):
+        conv1 = conv2d(input_aug,64,[3, 3],"same",tf.nn.relu,'conv1_1')
+        conv2 = conv2d(conv1,64,[3, 3],"same",tf.nn.relu,'conv1_2')
     pool1 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
     
-    conv3 = conv2d(pool1,128,[3, 3],"same",tf.nn.relu,'conv3')
-    conv4 = conv2d(conv3,128,[3, 3],"same",tf.nn.relu,'conv4')
+    with tf.variable_scope('conv2'):
+        conv3 = conv2d(pool1,128,[3, 3],"same",tf.nn.relu,'conv2_1')
+        conv4 = conv2d(conv3,128,[3, 3],"same",tf.nn.relu,'conv2_2')
     pool2 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2, 2], strides=2)
 
-    conv5 = conv2d(pool2,256,[3, 3],"same",tf.nn.relu,'conv5')
-    conv6 = conv2d(conv5,256,[3, 3],"same",tf.nn.relu,'conv6')
-    conv7 = conv2d(conv6,256,[1, 1],"same",tf.nn.relu,'conv7')
+    with tf.variable_scope('conv3'):
+        conv5 = conv2d(pool2,256,[3, 3],"same",tf.nn.relu,'conv3_1')
+        conv6 = conv2d(conv5,256,[3, 3],"same",tf.nn.relu,'conv3_2')
+        conv7 = conv2d(conv6,256,[3, 3],"same",tf.nn.relu,'conv3_3')
     pool3 = tf.layers.max_pooling2d(inputs=conv7, pool_size=[2, 2], strides=2)
 
-    conv8 = conv2d(pool3,512,[3, 3],"same",tf.nn.relu,'conv8')
-    conv9 = conv2d(conv8,512,[3, 3],"same",tf.nn.relu,'conv9')
-    conv10 = conv2d(conv9,512,[1, 1],"same",tf.nn.relu,'conv10')
+    with tf.variable_scope('conv4'):
+        conv8 = conv2d(pool3,512,[3, 3],"same",tf.nn.relu,'conv4_1')
+        conv9 = conv2d(conv8,512,[3, 3],"same",tf.nn.relu,'conv4_2')
+        conv10 = conv2d(conv9,512,[3, 3],"same",tf.nn.relu,'conv4_3')
     pool4 = tf.layers.max_pooling2d(inputs=conv10, pool_size=[2, 2], strides=2)
 
-    conv11 = conv2d(pool4,512,[3, 3],"same",tf.nn.relu,'conv11')
-    conv12 = conv2d(conv11,512,[3, 3],"same",tf.nn.relu,'conv12')
-    conv13 = conv2d(conv12,512,[1, 1],"same",tf.nn.relu,'conv13')
+    with tf.variable_scope('conv5'):
+        conv11 = conv2d(pool4,512,[3, 3],"same",tf.nn.relu,'conv5_1')
+        conv12 = conv2d(conv11,512,[3, 3],"same",tf.nn.relu,'conv5_2')
+        conv13 = conv2d(conv12,512,[3, 3],"same",tf.nn.relu,'conv5_3')
     pool5 = tf.layers.max_pooling2d(inputs=conv13, pool_size=[2, 2], strides=2)
 
     pool5_flat = tf.reshape(pool5, [-1, 7 * 7 * 512])
-    dense1 = dense(pool5_flat, 4096,tf.nn.relu,'dense1')
+    dense1 = dense(pool5_flat, 4096,tf.nn.relu,'fc6')
     
     dropout1 = tf.layers.dropout(
         inputs=dense1, rate=0.5, training=mode == tf.estimator.ModeKeys.TRAIN)
-    dense2 = dense(dropout1, 4096,tf.nn.relu,'dense2')
+    dense2 = dense(dropout1, 4096,tf.nn.relu,'fc7')
     
     dropout2 = tf.layers.dropout(
         inputs=dense2, rate=0.5, training=mode == tf.estimator.ModeKeys.TRAIN)
 
     # Logits Layer
-    logits = tf.layers.dense(inputs=dropout2, units=20,name='logits')
+    logits = tf.layers.dense(inputs=dropout2, units=20,name='fc8')
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -141,18 +146,11 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         "probabilities": tf.nn.sigmoid(logits, name="sigmoid_tensor")
     }
 
-    # Summaries for Tensorboard
-    # pdb.set_trace()
-        
-
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
     loss = tf.identity(tf.losses.sigmoid_cross_entropy(
     multi_class_labels=labels, logits=logits), name='loss')
-    # Calculate Loss (for both TRAIN and EVAL modes)
-    # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=10)
-
-
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -172,6 +170,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         grads_and_vars=optimizer.compute_gradients(loss)
         for g, v in grads_and_vars:
             if g is not None:
+                tf.summary.histogram(v.name[:-2],v)
                 tf.summary.histogram(v.name[:-2]+'_grad', g)
         tf.summary.image('my_image', input_layer, max_outputs=25)
         tf.summary.scalar('train_loss', loss)
@@ -181,32 +180,29 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         #     output_dir='mnistParams',
         #     summary_op=tf.summary.merge_all())
 
-        
-        # print("#########Loss:{}############".format(loss))
-        # pdb.set_trace()
         return tf.estimator.EstimatorSpec(
             mode=mode, 
             loss=loss, 
             train_op=train_op)
             # training_hooks=[summary_hook])
 
-    # accuracy = tf.metrics.accuracy(
-    #         labels=labels, predictions=predictions["classes"])
-    # metrics = {'accuracy': accuracy}
-    # # tf.summary.scalar('accuracy', accuracy[1])
-    # # tf.summary.scalar('accuracy', loss[1])
+    # # accuracy = tf.metrics.accuracy(
+    # #         labels=labels, predictions=predictions["classes"])
+    # # metrics = {'accuracy': accuracy}
+    # # # tf.summary.scalar('accuracy', accuracy[1])
+    # # # tf.summary.scalar('accuracy', loss[1])
 
-    # if mode == tf.estimator.ModeKeys.EVAL:
-    #     return tf.estimator.EstimatorSpec(
-    #         mode, loss=loss, eval_metric_ops=metrics)
+    # # if mode == tf.estimator.ModeKeys.EVAL:
+    # #     return tf.estimator.EstimatorSpec(
+    # #         mode, loss=loss, eval_metric_ops=metrics)
 
-    # # Add evaluation metrics (for EVAL mode)
-    eval_metric_ops = {
-        "accuracy": tf.metrics.accuracy(
-            labels=labels, predictions=predictions["classes"])}
-    # pdb.set_trace()
-    return tf.estimator.EstimatorSpec(
-        mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+    # # # Add evaluation metrics (for EVAL mode)
+    # eval_metric_ops = {
+    #     "accuracy": tf.metrics.accuracy(
+    #         labels=labels, predictions=predictions["classes"])}
+    # # pdb.set_trace()
+    # return tf.estimator.EstimatorSpec(
+    #     mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
 def load_pascal(data_dir, split='train'):
@@ -305,15 +301,11 @@ def _get_el(arr, i):
 def main():
     args = parse_args()
     # Load training and eval data
-    # train_data, train_labels, train_weights = load_pascal(
-    #     args.data_dir, split='trainval')
-    # eval_data, eval_labels, eval_weights = load_pascal(
-    #     args.data_dir, split='test')
     train_data, train_labels, train_weights = load_pascal(
         trainval_data_dir, split='trainval')
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
-    # pdb.set_trace()
+   
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
@@ -321,14 +313,14 @@ def main():
     tensors_to_log = {"loss": "loss"}
     # pdb.set_trace()
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=100)
+        tensors=tensors_to_log, every_n_iter=400)
     summary_hook = tf.train.SummarySaverHook(
-            save_steps=400,
-            output_dir='mnistParams',
+            save_steps=200,
+            output_dir='VGGParams',
             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
+  
     # Train the model
-    # pdb.set_trace()
-
+  
     n_iter = []
     mAP_list = []
     randAP_list = []
@@ -369,8 +361,9 @@ def main():
         mAP_list.append(np.mean(AP))
         print('Obtained {} mAP'.format(np.mean(AP)))
         print('per class:')
-        for cid, cname in enumerate(CLASS_NAMES):
-            print('{}: {}'.format(cname, _get_el(AP, cid)))
+        if (i+1)%10==0:
+            for cid, cname in enumerate(CLASS_NAMES):
+                print('{}: {}'.format(cname, _get_el(AP, cid)))
 
     with open('randAP_VGG', 'wb') as fp:
         pickle.dump(randAP_list, fp)
