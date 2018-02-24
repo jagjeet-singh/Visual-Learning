@@ -47,7 +47,7 @@ CLASS_NAMES = [
 trainval_data_dir = 'VOCdevkit_trainVal/VOC2007'
 test_data_dir = 'VOCdevkit_test/VOC2007'
 size = 224
-full=0
+full=1
 
 def conv2d(inputs,filters, kernel_size,padding,activation,name,kernel_initializer, bias_initializer):
     return tf.layers.conv2d(
