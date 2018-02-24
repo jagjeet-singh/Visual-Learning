@@ -229,12 +229,12 @@ def load_pascal(data_dir, split='train'):
     image_list.sort()
     n_images = len(image_list)
     num_classes = len(CLASS_NAMES)
-    images = np.zeros((10,size,size,3))
-    labels = np.zeros((10, num_classes))
-    weights = np.zeros((10, num_classes))
-    # images = np.zeros((n_images,size,size,3))
-    # labels = np.zeros((n_images, num_classes))
-    # weights = np.zeros((n_images, num_classes))
+    # images = np.zeros((10,size,size,3))
+    # labels = np.zeros((10, num_classes))
+    # weights = np.zeros((10, num_classes))
+    images = np.zeros((n_images,size,size,3))
+    labels = np.zeros((n_images, num_classes))
+    weights = np.zeros((n_images, num_classes))
     counter = 0
     # Read Image JPGs
     for image in image_list:
