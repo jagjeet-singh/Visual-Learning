@@ -176,10 +176,10 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         tf.summary.image('my_image', input_layer, max_outputs=25)
         tf.summary.scalar('train_loss', loss)
         tf.summary.scalar('learning_rate', decayed_learning_rate)
-        summary_hook = tf.train.SummarySaverHook(
-            save_steps=400,
-            output_dir='mnistParams',
-            summary_op=tf.summary.merge_all())
+        # summary_hook = tf.train.SummarySaverHook(
+        #     save_steps=400,
+        #     output_dir='mnistParams',
+        #     summary_op=tf.summary.merge_all())
 
         
         # print("#########Loss:{}############".format(loss))
@@ -187,8 +187,8 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
         return tf.estimator.EstimatorSpec(
             mode=mode, 
             loss=loss, 
-            train_op=train_op,
-            training_hooks=[summary_hook])
+            train_op=train_op)
+            # training_hooks=[summary_hook])
 
     # accuracy = tf.metrics.accuracy(
     #         labels=labels, predictions=predictions["classes"])
@@ -322,6 +322,10 @@ def main():
     # pdb.set_trace()
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=100)
+    summary_hook = tf.train.SummarySaverHook(
+            save_steps=400,
+            output_dir='mnistParams',
+            scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
     # Train the model
     # pdb.set_trace()
 
@@ -342,7 +346,7 @@ def main():
         pascal_classifier.train(
             input_fn=train_input_fn,
             steps=400,
-            hooks=[logging_hook])
+            hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
             x={"x": eval_data, "w": eval_weights},
