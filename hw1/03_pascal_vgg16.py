@@ -45,7 +45,8 @@ CLASS_NAMES = [
 
 trainval_data_dir = 'VOCdevkit_trainVal/VOC2007'
 test_data_dir = 'VOCdevkit_test/VOC2007'
-size = 256
+size = 224
+full=0
 
 def conv2d(inputs,filters, kernel_size,padding,activation,name):
     return tf.layers.conv2d(
@@ -75,21 +76,21 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
    
     # pdb.set_trace()
 
-    input_layer = tf.reshape(features["x"], [-1, 256, 256, 3])
-    resize = lambda x:tf.image.resize_images(x, size=[320,320])
-    rand_crop = lambda x:tf.random_crop(x,size=[256,256,3])
+    input_layer = tf.reshape(features["x"], [-1, size, size, 3])
+    resize = lambda x:tf.image.resize_images(x, size=[280,280])
+    rand_crop = lambda x:tf.random_crop(x,size=[size,size,3])
     cen_crop = lambda x: tf.image.central_crop(x, central_fraction=0.8)
     rand_flip = lambda x:tf.image.random_flip_left_right(x)
 
 
     if mode == tf.estimator.ModeKeys.TRAIN:
-        input_aug = tf.map_fn(fn=resize, elems=input_layer)
-        input_aug = tf.map_fn(fn=rand_crop, elems=input_aug)
-        input_aug = tf.map_fn(fn=rand_flip, elems=input_aug)
+        input_aug = tf.map_fn(fn=resize, elems=input_layer, name='resize_train')
+        input_aug = tf.map_fn(fn=rand_crop, elems=input_aug, name='random_crop')
+        input_aug = tf.map_fn(fn=rand_flip, elems=input_aug, name='random_flip')
 
     elif mode == tf.estimator.ModeKeys.PREDICT:
-        input_aug = tf.map_fn(fn=resize, elems=input_layer)
-        input_aug = tf.map_fn(fn=cen_crop, elems=input_aug)
+        input_aug = tf.map_fn(fn=resize, elems=input_layer, name='resize_test')
+        input_aug = tf.map_fn(fn=cen_crop, elems=input_aug, name='center_crop')
 
     else:
         input_aug = input_layer
@@ -106,20 +107,20 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
 
     conv5 = conv2d(pool2,256,[3, 3],"same",tf.nn.relu,'conv5')
     conv6 = conv2d(conv5,256,[3, 3],"same",tf.nn.relu,'conv6')
-    conv7 = conv2d(conv6,256,[3, 3],"same",tf.nn.relu,'conv7')
+    conv7 = conv2d(conv6,256,[1, 1],"same",tf.nn.relu,'conv7')
     pool3 = tf.layers.max_pooling2d(inputs=conv7, pool_size=[2, 2], strides=2)
 
     conv8 = conv2d(pool3,512,[3, 3],"same",tf.nn.relu,'conv8')
     conv9 = conv2d(conv8,512,[3, 3],"same",tf.nn.relu,'conv9')
-    conv10 = conv2d(conv9,512,[3, 3],"same",tf.nn.relu,'conv10')
+    conv10 = conv2d(conv9,512,[1, 1],"same",tf.nn.relu,'conv10')
     pool4 = tf.layers.max_pooling2d(inputs=conv10, pool_size=[2, 2], strides=2)
 
     conv11 = conv2d(pool4,512,[3, 3],"same",tf.nn.relu,'conv11')
     conv12 = conv2d(conv11,512,[3, 3],"same",tf.nn.relu,'conv12')
-    conv13 = conv2d(conv12,512,[3, 3],"same",tf.nn.relu,'conv13')
+    conv13 = conv2d(conv12,512,[1, 1],"same",tf.nn.relu,'conv13')
     pool5 = tf.layers.max_pooling2d(inputs=conv13, pool_size=[2, 2], strides=2)
 
-    pool5_flat = tf.reshape(pool5, [-1, 8 * 8 * 512])
+    pool5_flat = tf.reshape(pool5, [-1, 7 * 7 * 512])
     dense1 = dense(pool5_flat, 4096,tf.nn.relu,'dense1')
     
     dropout1 = tf.layers.dropout(
@@ -229,16 +230,23 @@ def load_pascal(data_dir, split='train'):
     image_list.sort()
     n_images = len(image_list)
     num_classes = len(CLASS_NAMES)
-    # images = np.zeros((10,size,size,3))
-    # labels = np.zeros((10, num_classes))
-    # weights = np.zeros((10, num_classes))
-    images = np.zeros((n_images,size,size,3))
-    labels = np.zeros((n_images, num_classes))
-    weights = np.zeros((n_images, num_classes))
+    if full:
+        images = np.zeros((n_images,size,size,3))
+        labels = np.zeros((n_images, num_classes))
+        weights = np.zeros((n_images, num_classes))
+    else:
+        images = np.zeros((20,size,size,3))
+        labels = np.zeros((20, num_classes))
+        weights = np.zeros((20, num_classes))
+
     counter = 0
     # Read Image JPGs
-    for image in image_list:
-    # for image in image_list[:10]:
+    # for image in image_list:
+    if full: 
+        im_list = image_list
+    else:
+        im_list = image_list[:20]
+    for image in im_list:
         imageJpgFile = osp.join(data_dir,'JPEGImages/'+image+'.jpg')
         img = Image.open(imageJpgFile)
         img = img.resize((size,size), Image.NEAREST)
@@ -253,8 +261,12 @@ def load_pascal(data_dir, split='train'):
             cat_list = f.read().splitlines()
         cat_list.sort()
         img_index = 0
-        # for line in cat_list[:10]:
-        for line in cat_list:
+        if full:
+            c_list = cat_list
+        else:
+            c_list = cat_list[:20]
+        for line in c_list:
+        # for line in cat_list:
             # print(cat_index)
             if line[-2:]==' 1':
                 labels[img_index][cat_index]=1
@@ -307,6 +319,7 @@ def main():
                          num_classes=train_labels.shape[1]),
         model_dir="VGGParams")
     tensors_to_log = {"loss": "loss"}
+    # pdb.set_trace()
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=100)
     # Train the model
