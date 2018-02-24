@@ -380,19 +380,19 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(1):
+    for i in range(100):
         n_iter.append(i)
 
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=2,
+        batch_size=10,
         num_epochs=None,
         shuffle=True)
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=2,
+            steps=40,
             hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
