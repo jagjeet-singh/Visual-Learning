@@ -244,7 +244,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
             if g is not None:
                 tf.summary.histogram(v.name[:-2]+'_grad', g)
                 tf.summary.histogram(v.name[:-2],v)
-        tf.summary.image('my_image', input_layer, max_outputs=25)
+        tf.summary.image('my_image', input_layer, max_outputs=20)
         tf.summary.scalar('train_loss', loss)
         tf.summary.scalar('learning_rate', decayed_learning_rate)
         # summary_hook = tf.train.SummarySaverHook(
@@ -380,7 +380,7 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(100):
+    for i in range(40):
         n_iter.append(i)
 
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -392,7 +392,7 @@ def main():
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=40,
+            steps=100,
             hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
