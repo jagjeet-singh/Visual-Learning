@@ -18,6 +18,7 @@ from eval import compute_map
 # import models
 import pickle
 from IPython import embed
+from tensorflow.core.framework import summary_pb2
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
