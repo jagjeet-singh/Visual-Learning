@@ -173,7 +173,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
             if g is not None:
                 tf.summary.histogram(v.name[:-2],v)
                 tf.summary.histogram(v.name[:-2]+'_grad', g)
-        tf.summary.image('my_image', input_layer, max_outputs=25)
+        tf.summary.image('my_image', input_layer, max_outputs=10)
         tf.summary.scalar('train_loss', loss)
         tf.summary.scalar('learning_rate', decayed_learning_rate)
         # summary_hook = tf.train.SummarySaverHook(
