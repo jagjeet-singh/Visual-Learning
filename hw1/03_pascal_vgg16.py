@@ -297,23 +297,23 @@ def main():
         test_data_dir, split='test')
     
     my_checkpoint_config = tf.estimator.RunConfig(
-        save_checkpoints_steps=10000,
-        keep_checkpoint_max = 4,
-        save_summary_steps=2000,
+        save_checkpoints_steps=1000,
+        keep_checkpoint_max = 3,
+        save_summary_steps=1000,
         log_step_count_steps=1000)
 
 
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
-        model_dir="VGGParamsFinal",
+        model_dir="VGGParamsFinal_trainOnly",
         config=my_checkpoint_config)
     tensors_to_log = {"loss": "loss"}
     # pdb.set_trace()
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=1000)
+        tensors=tensors_to_log, every_n_iter=500)
     summary_hook = tf.train.SummarySaverHook(
-            # save_steps=2000,
+            save_steps=1000,
             output_dir='VGGParamsFinal_trainOnly',
             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
@@ -328,13 +328,13 @@ def main():
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=1,
+        batch_size=10,
         num_epochs=None,
         shuffle=True)
         
     pascal_classifier.train(
         input_fn=train_input_fn,
-        steps=1,
+        steps=10000,
         hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         # eval_input_fn = tf.estimator.inputs.numpy_input_fn(
