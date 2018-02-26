@@ -17,6 +17,7 @@ import pdb
 from eval import compute_map
 # import models
 import pickle
+from tensorflow.core.framework import summary_pb2
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -46,7 +47,7 @@ CLASS_NAMES = [
 trainval_data_dir = 'VOCdevkit_trainVal/VOC2007'
 test_data_dir = 'VOCdevkit_test/VOC2007'
 size = 224
-full=1
+full=0
 
 def conv2d(inputs,filters, kernel_size,padding,activation,name):
     return tf.layers.conv2d(
@@ -186,25 +187,6 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
             train_op=train_op)
             # training_hooks=[summary_hook])
 
-    # # accuracy = tf.metrics.accuracy(
-    # #         labels=labels, predictions=predictions["classes"])
-    # # metrics = {'accuracy': accuracy}
-    # # # tf.summary.scalar('accuracy', accuracy[1])
-    # # # tf.summary.scalar('accuracy', loss[1])
-
-    # # if mode == tf.estimator.ModeKeys.EVAL:
-    # #     return tf.estimator.EstimatorSpec(
-    # #         mode, loss=loss, eval_metric_ops=metrics)
-
-    # # # Add evaluation metrics (for EVAL mode)
-    # eval_metric_ops = {
-    #     "accuracy": tf.metrics.accuracy(
-    #         labels=labels, predictions=predictions["classes"])}
-    # # pdb.set_trace()
-    # return tf.estimator.EstimatorSpec(
-    #     mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
-
-
 def load_pascal(data_dir, split='train'):
     """
     Function to read images from PASCAL data folder.
@@ -297,6 +279,14 @@ def _get_el(arr, i):
     except IndexError:
         return arr
 
+def summary_var(log_dir, name, val, step):
+    writer = tf.summary.FileWriterCache.get(log_dir)
+    summary_proto = summary_pb2.Summary()
+    value = summary_proto.value.add()
+    value.tag = name
+    value.simple_value = float(val)
+    writer.add_summary(summary_proto, step)
+    writer.flush()
 
 def main():
     args = parse_args()
@@ -305,27 +295,34 @@ def main():
         trainval_data_dir, split='trainval')
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
-   
+    
+    my_checkpoint_config = tf.estimator.RunConfig(
+        save_checkpoints_steps=10000,
+        keep_checkpoint_max = 4,
+        save_summary_steps=2000,
+        log_step_count_steps=1000)
+
+
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
-        model_dir="VGGParams")
+        model_dir="VGGParamsFinal",
+        config=my_checkpoint_config)
     tensors_to_log = {"loss": "loss"}
     # pdb.set_trace()
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=400)
+        tensors=tensors_to_log, every_n_iter=1000)
     summary_hook = tf.train.SummarySaverHook(
-            save_steps=200,
-            output_dir='VGGParams',
+            save_steps=2000,
+            output_dir='VGGParamsFinal',
             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
-  
-    # Train the model
+
   
     n_iter = []
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(100):
+    for i in range(50):
         n_iter.append(i)
 
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -337,7 +334,7 @@ def main():
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=400,
+            steps=800,
             hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -348,15 +345,15 @@ def main():
         # pdb.set_trace()
         pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
         pred = np.stack([p['probabilities'] for p in pred])
-        rand_AP = compute_map(
-            eval_labels, np.random.random(eval_labels.shape),
-            eval_weights, average=None)
-        print('Random AP: {} mAP'.format(np.mean(rand_AP)))
-        randAP_list.append(np.mean(rand_AP))
-        gt_AP = compute_map(
-            eval_labels, eval_labels, eval_weights, average=None)
-        print('GT AP: {} mAP'.format(np.mean(gt_AP)))
-        gtAP_list.append(np.mean(gt_AP))
+        # rand_AP = compute_map(
+        #     eval_labels, np.random.random(eval_labels.shape),
+        #     eval_weights, average=None)
+        # print('Random AP: {} mAP'.format(np.mean(rand_AP)))
+        # randAP_list.append(np.mean(rand_AP))
+        # gt_AP = compute_map(
+        #     eval_labels, eval_labels, eval_weights, average=None)
+        # print('GT AP: {} mAP'.format(np.mean(gt_AP)))
+        # gtAP_list.append(np.mean(gt_AP))
         AP = compute_map(eval_labels, pred, eval_weights, average=None)
         mAP_list.append(np.mean(AP))
         print('Obtained {} mAP'.format(np.mean(AP)))
@@ -364,11 +361,12 @@ def main():
         if (i+1)%10==0:
             for cid, cname in enumerate(CLASS_NAMES):
                 print('{}: {}'.format(cname, _get_el(AP, cid)))
+        summary_var('VGGParamsFinal', 'mAP', np.mean(AP), i+1)
 
-    with open('randAP_VGG', 'wb') as fp:
-        pickle.dump(randAP_list, fp)
-    with open('gtAP_VGG', 'wb') as fp:
-        pickle.dump(gtAP_list, fp)
+    # with open('randAP_VGG', 'wb') as fp:
+    #     pickle.dump(randAP_list, fp)
+    # with open('gtAP_VGG', 'wb') as fp:
+    #     pickle.dump(gtAP_list, fp)
     with open('mAP_VGG', 'wb') as fp:
         pickle.dump(mAP_list, fp)
     
