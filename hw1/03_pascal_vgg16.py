@@ -313,8 +313,8 @@ def main():
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=1000)
     summary_hook = tf.train.SummarySaverHook(
-            save_steps=2000,
-            output_dir='VGGParamsFinal',
+            # save_steps=2000,
+            output_dir='VGGParamsFinal_trainOnly',
             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
   
@@ -322,29 +322,29 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(50):
-        n_iter.append(i)
+    # for i in range(1):
+        # n_iter.append(i)
 
-        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=10,
+        batch_size=1,
         num_epochs=None,
         shuffle=True)
         
-        pascal_classifier.train(
-            input_fn=train_input_fn,
-            steps=800,
-            hooks=[logging_hook, summary_hook])
+    pascal_classifier.train(
+        input_fn=train_input_fn,
+        steps=1,
+        hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": eval_data, "w": eval_weights},
-            y=eval_labels,
-            num_epochs=1,
-            shuffle=False)
+        # eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        #     x={"x": eval_data, "w": eval_weights},
+        #     y=eval_labels,
+        #     num_epochs=1,
+        #     shuffle=False)
         # pdb.set_trace()
-        pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
-        pred = np.stack([p['probabilities'] for p in pred])
+        # pred = list(pascal_classifier.predict(input_fn=eval_input_fn))
+        # pred = np.stack([p['probabilities'] for p in pred])
         # rand_AP = compute_map(
         #     eval_labels, np.random.random(eval_labels.shape),
         #     eval_weights, average=None)
@@ -354,27 +354,27 @@ def main():
         #     eval_labels, eval_labels, eval_weights, average=None)
         # print('GT AP: {} mAP'.format(np.mean(gt_AP)))
         # gtAP_list.append(np.mean(gt_AP))
-        AP = compute_map(eval_labels, pred, eval_weights, average=None)
-        mAP_list.append(np.mean(AP))
-        print('Obtained {} mAP'.format(np.mean(AP)))
-        print('per class:')
-        if (i+1)%10==0:
-            for cid, cname in enumerate(CLASS_NAMES):
-                print('{}: {}'.format(cname, _get_el(AP, cid)))
-        summary_var('VGGParamsFinal', 'mAP', np.mean(AP), i+1)
+        # AP = compute_map(eval_labels, pred, eval_weights, average=None)
+        # mAP_list.append(np.mean(AP))
+        # print('Obtained {} mAP'.format(np.mean(AP)))
+        # print('per class:')
+        # if (i+1)%10==0:
+        #     for cid, cname in enumerate(CLASS_NAMES):
+        #         print('{}: {}'.format(cname, _get_el(AP, cid)))
+        # summary_var('VGGParamsFinal', 'mAP', np.mean(AP), i+1)
 
     # with open('randAP_VGG', 'wb') as fp:
     #     pickle.dump(randAP_list, fp)
     # with open('gtAP_VGG', 'wb') as fp:
     #     pickle.dump(gtAP_list, fp)
-    with open('mAP_VGG', 'wb') as fp:
-        pickle.dump(mAP_list, fp)
+    # with open('mAP_VGG', 'wb') as fp:
+    #     pickle.dump(mAP_list, fp)
     
-    plt.plot(n_iter, mAP_list)
-    plt.ylabel('Test mAP')
-    plt.xlabel('Iterations')
-    plt.show()
-    plt.savefig('mAP_Pascal_VGG.png')
+    # plt.plot(n_iter, mAP_list)
+    # plt.ylabel('Test mAP')
+    # plt.xlabel('Iterations')
+    # plt.show()
+    # plt.savefig('mAP_Pascal_VGG.png')
 
 
 
