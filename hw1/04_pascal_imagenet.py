@@ -213,17 +213,6 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
 
     loss = tf.identity(tf.losses.sigmoid_cross_entropy(
     multi_class_labels=labels, logits=logits), name='loss')
-    # Calculate Loss (for both TRAIN and EVAL modes)
-    # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=10)
-    # embed()
-    # exclude = ['fc8/weights', 'fc8/biases']
-    # variables_to_restore = tf.contrib.slim.get_variables_to_restore(exclude=exclude)
-    # # v_to_res = v.name.split(':')[0].replace('kernel','weights'): v for v in variables_to_restore
-    # # v_final = 'vgg_16/'+v.replace('bias','biases'): for v in v_to_res
-    # tf.train.init_from_checkpoint(
-    #     'vgg_16.ckpt', 
-    #     {'vgg_16/'+v.name.split(':')[0].replace('kernel','weights').replace('bias','biases'): v for v in variables_to_restore})
-
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -245,7 +234,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
             if g is not None:
                 tf.summary.histogram(v.name[:-2]+'_grad', g)
                 tf.summary.histogram(v.name[:-2],v)
-        tf.summary.image('my_image', input_layer, max_outputs=20)
+        tf.summary.image('my_image', input_layer, max_outputs=5)
         tf.summary.scalar('train_loss', loss)
         tf.summary.scalar('learning_rate', decayed_learning_rate)
         # summary_hook = tf.train.SummarySaverHook(
@@ -374,7 +363,7 @@ def main():
     
     my_checkpoint_config = tf.estimator.RunConfig(
         save_checkpoints_steps=400,
-        keep_checkpoint_max = 2,
+        keep_checkpoint_max = 1,
         save_summary_steps=400,
         log_step_count_steps=400)
 
@@ -385,7 +374,7 @@ def main():
     tensors_to_log = {"loss": "loss"}
     
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=100)
+        tensors=tensors_to_log, every_n_iter=200)
     summary_hook = tf.train.SummarySaverHook(
         save_steps=400,
         output_dir='ImageNetParams',
@@ -401,13 +390,13 @@ def main():
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=1,
+        batch_size=4,
         num_epochs=None,
         shuffle=True)
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=1,
+            steps=2,
             hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -435,7 +424,7 @@ def main():
         if (i+1)%10 == 0:
 	        for cid, cname in enumerate(CLASS_NAMES):
 	            print('{}: {}'.format(cname, _get_el(AP, cid)))
-        summary_var('ImageNetmAP', 'mAP', np.mean(AP), (i+1)*400)
+        # summary_var('ImageNetmAP', 'mAP', np.mean(AP), (i+1)*400)
     # with open('randAP_IMG', 'wb') as fp:
     #     pickle.dump(randAP_list, fp)
     # with open('gtAP_VGG', 'wb') as fp:
