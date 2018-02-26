@@ -350,6 +350,14 @@ def _get_el(arr, i):
     except IndexError:
         return arr
 
+def summary_var(log_dir, name, val, step):
+    writer = tf.summary.FileWriterCache.get(log_dir)
+    summary_proto = summary_pb2.Summary()
+    value = summary_proto.value.add()
+    value.tag = name
+    value.simple_value = float(val)
+    writer.add_summary(summary_proto, step)
+    writer.flush()
 
 def main():
     args = parse_args()
@@ -363,6 +371,12 @@ def main():
     eval_data, eval_labels, eval_weights = load_pascal(
         test_data_dir, split='test')
     
+    my_checkpoint_config = tf.estimator.RunConfig(
+        save_checkpoints_steps=400,
+        keep_checkpoint_max = 2,
+        save_summary_steps=400,
+        log_step_count_steps=400)
+
     pascal_classifier = tf.estimator.Estimator(
         model_fn=partial(cnn_model_fn,
                          num_classes=train_labels.shape[1]),
@@ -372,7 +386,7 @@ def main():
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=100)
     summary_hook = tf.train.SummarySaverHook(
-        save_steps=100,
+        save_steps=400,
         output_dir='ImageNetParams',
         scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
@@ -380,19 +394,19 @@ def main():
     mAP_list = []
     randAP_list = []
     gtAP_list = []
-    for i in range(40):
+    for i in range(1):
         n_iter.append(i)
 
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
         x={"x": train_data, "w": train_weights},
         y=train_labels,
-        batch_size=10,
+        batch_size=1,
         num_epochs=None,
         shuffle=True)
         
         pascal_classifier.train(
             input_fn=train_input_fn,
-            steps=100,
+            steps=1,
             hooks=[logging_hook, summary_hook])
         # Evaluate the model and print results
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -420,7 +434,7 @@ def main():
         if (i+1)%10 == 0:
 	        for cid, cname in enumerate(CLASS_NAMES):
 	            print('{}: {}'.format(cname, _get_el(AP, cid)))
-
+        summary_var('ImageNetmAP', 'mAP', np.mean(AP), (i+1)*400)
     # with open('randAP_IMG', 'wb') as fp:
     #     pickle.dump(randAP_list, fp)
     # with open('gtAP_VGG', 'wb') as fp:
