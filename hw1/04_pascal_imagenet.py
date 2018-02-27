@@ -48,7 +48,8 @@ CLASS_NAMES = [
 trainval_data_dir = 'VOCdevkit_trainVal/VOC2007'
 test_data_dir = 'VOCdevkit_test/VOC2007'
 size = 224
-full=1
+full=0
+reader = tf.train.NewCheckpointReader('vgg_16.ckpt')
 
 def conv2d(inputs,filters, kernel_size,padding,activation,name,kernel_initializer, bias_initializer):
     return tf.layers.conv2d(
@@ -88,7 +89,7 @@ def cnn_model_fn(features, labels, mode, num_classes=20):
     rand_crop = lambda x:tf.random_crop(x,size=[size,size,3])
     cen_crop = lambda x: tf.image.central_crop(x, central_fraction=0.8)
     rand_flip = lambda x:tf.image.random_flip_left_right(x)
-    reader = tf.train.NewCheckpointReader('vgg_16.ckpt')
+    # reader = tf.train.NewCheckpointReader('vgg_16.ckpt')
 
     if mode == tf.estimator.ModeKeys.TRAIN:
         input_aug = tf.map_fn(fn=resize, elems=input_layer, name='resize_train')
@@ -340,14 +341,14 @@ def _get_el(arr, i):
     except IndexError:
         return arr
 
-def summary_var(log_dir, name, val, step):
-    writer = tf.summary.FileWriterCache.get(log_dir)
-    summary_proto = summary_pb2.Summary()
-    value = summary_proto.value.add()
-    value.tag = name
-    value.simple_value = float(val)
-    writer.add_summary(summary_proto, step)
-    writer.flush()
+# def summary_var(log_dir, name, val, step):
+#     writer = tf.summary.FileWriterCache.get(log_dir)
+#     summary_proto = summary_pb2.Summary()
+#     value = summary_proto.value.add()
+#     value.tag = name
+#     value.simple_value = float(val)
+#     writer.add_summary(summary_proto, step)
+#     writer.flush()
 
 def main():
     args = parse_args()
